@@ -17,30 +17,84 @@ vector gradient(vector v) {
     return vector{(4 * v.x1) + v.x2, v.x1 + (2 * v.x2)};
 }
 
-int main() {
-    vector x_init{0.5, 1}; // Начальные значения
-    const double stepSize = 0.01; // Размер шага
-    int maxIterations = 1000; // Максимальное количество итераций
-    double epsilon = 0.01; // Значение, которое будет считаться минимальным
-    double currentValue = f(x_init); // Текущее значение функции
+double norma(vector v){
+    return (std::sqrt(pow(v.x1, 2) + pow(v.x2, 2)));
+}
 
-    for (int i = 0; i < maxIterations; ++i) {
-        vector grad = gradient(x_init); // Вычисляем градиент функции по x
-        // Вычисляем направление наискорейшего спуска
-        double direction = -grad.x1 / std::sqrt(pow(grad.x1, 2) + pow(grad.x2, 2));
-        x_init.x1 -= stepSize * direction; // Делаем шаг в направлении градиента по x
-        x_init.x2 -= stepSize * direction; // Делаем шаг в направлении градиента по y
-        currentValue = f(x_init); // Обновляем текущее значение функции
-
-        if (currentValue < epsilon) {
-            epsilon = currentValue; // Если нашли лучшее значение, сохраняем его
-        } else {
-            break; // Если значение стало хуже, прерываем цикл
+double OneDimMinimization(double a0, double b0, double l){
+    double a = a0;
+    double b = b0;
+    double Xc = (a+b)/2.0;
+    double L = b-a;
+    while (1) {
+        double y = a + L/4.0;
+        double z = b - L/4.0;
+        double Fy = f({a0 - (y * (gradient({a0, b0}).x1)), b0 - (y * (gradient({a0, b0}).x2))});
+        double Fz = f({a0 - (z * (gradient({a0, b0}).x1)), b0 - (z * (gradient({a0, b0}).x2))});
+        double Fc = f({a0 - (Xc * (gradient({a0, b0}).x1)), b0 - (Xc * (gradient({a0, b0}).x2))});;
+        if (Fy < Fc){
+            b = Xc;
+            Xc = y;
         }
+        else if (Fz < Fc){
+            a = Xc;
+            Xc = z;
+        }
+        else {
+            a = y;
+            b = z;
+        }
+        L = b - a;
+        if (L <= l) return Xc;
+    } 
+}
+
+int main(){
+    // step 1
+    int k = 0;
+    double x1_0 = 0.5;
+    double x2_0 = 1;
+
+    double x1_k = 0;
+    double x2_k = 0;
+    
+    double e = 0.01;
+
+    while(1){
+        printf("\nШаг(k) = %i ; x1_%i = %f ; x2_%i = %f\n", k, k, x1_0, k, x2_0);
+        // step 2
+        vector vecK = {x1_0, x2_0};
+        printf("Вычислим значение градиента в заданной точке (%f, %f)\n", gradient(vecK).x1, gradient(vecK).x2);
+        printf("Норма вектора = %f\nСравнивним норму с е1\n", norma(gradient(vecK)));
+        // step 3
+        if (norma(gradient(vecK)) < e){
+            printf("Условие выполнено. Расчет закончен\n");
+            return 0;
+        }
+        printf("Норма вектора больше е\n");
+
+        // step 4
+        double step = OneDimMinimization(x1_0, x2_0, 0.0001);
+
+        printf("Шаг step %f\n", step);
+
+        printf("Вычислили величину шага t = %f\n", step);
+        // step 5
+        x1_k = (x1_0 - (step * (gradient(vecK).x1)));
+        x2_k = (x2_0 - (step * (gradient(vecK).x2)));
+        printf("Вычислим x%i\nx1_%i = %f\nx2_%i = %f\n", k, k, x1_k, k, x2_k);
+
+        // step 6
+        printf("Проверим выполнение условия || x%i - x%i || < e и |f(x%i) - f(x%i)| < e: ", k, k-1, k, k-1);
+        if(norma({x1_k - x1_0, x2_k - x2_0}) < e && fabs(f({x1_k, x2_k}) - f({x1_0, x2_0}))){
+            printf("Оба условия выполнены\n");
+            break;
+        } 
+        // go to step 2        
+        x1_0 = x1_k;
+        x2_0 = x2_k;
+        k = k + 1;
     }
-
-    std::cout << "Минимальное значение функции: " << epsilon << std::endl;
-    std::cout << "Значения переменных x и y, при которых достигается минимум: " << x_init.x1 << " " << x_init.x2 << std::endl;
-
+    printf("Ответ:\nK = %i\nx1 = %f\nx2 = %f\nf(x1, x2) = %f\n", k, x1_k, x2_k, f({x1_k, x2_k}));
     return 0;
 }
